@@ -303,6 +303,28 @@ Let's break down the process we're about to follow to apply these and solve expr
       
 4. **Substitute and Repeat:** After applying a rule in step 2, substitute the simplified value back into the larger expression. Then, return to step 2 and repeat the process until the entire expression is reduced to a single Boolean value (`true` or `false`
 
+```mermaid
+%%{init: {'flowchart': {'width': 500, 'useMaxWidth': true}}}%%
+flowchart TB
+    classDef primary fill:#e9d8a6,stroke:#94d2bd,color:#001219
+    classDef secondary fill:#ee9b00,stroke:#ca6702,color:#001219
+    classDef decision fill:#005f73,stroke:#0a9396,color:#e9d8a6
+    classDef terminal fill:#9b2226,stroke:#ae2012,color:#e9d8a6
+    A[Start: Expression] -->|Step 1| B[Add parentheses<br>following PNAO]:::primary
+    B --> C{Can we use<br>a base rule?}:::decision
+    C -->|Yes| D[Apply base rule]:::secondary
+    C -->|No| E[Select appropriate<br>step rule]:::primary
+    E --> F[NotStep:<br>Simplify operand]:::secondary
+    E --> G[AndStep:<br>Simplify with value]:::secondary
+    E --> H[OrStep:<br>Simplify with value]:::secondary
+    F & G & H --> I[Identify new<br>subexpression]:::primary
+    I -->|Recursive| B
+    D --> J{Is it a<br>single value?}:::decision
+    J -->|No| K[Substitute back<br>into expression]:::secondary
+    K --> C
+    J -->|Yes| L[End:<br>Boolean Value]:::terminal
+```
+
 Let's walk through an example or two to be sure we got it.
 
 ---
