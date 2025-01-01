@@ -73,7 +73,7 @@ Similar to evolution and its inevitable path to crustaceans, when running code, 
 >
 
 
-The above examples follow a simple form: operators take in som number of values, and simplify to a single value. However, sometimes we have more complex statements! For example, how do we describe a problem like `11 + (33/3)`? What if they were more nested? Well luckily, we have a term for such nested problems: *expressions*
+The above examples follow a simple form: operators take in some number of values, and simplify to a single value. However, sometimes we have more complex statements! For example, how do we describe a problem like `11 + (33/3)`? What if they were more nested? Well luckily, we have a term for such nested problems: *expressions*
 
 >[!abstract] Expressions
 >> [!Definition]
@@ -140,9 +140,9 @@ Now we’re introducing a lot of definitions, and we notice that a lot of these 
 
 
 > [!example] Type signature
-> saying that the operator `OR` takes in two Boolean’s and returns (simplifies to) a Boolean is clunky. Instead we can write this like so:
+> Saying that the operator `OR` takes in two Boolean’s and returns (simplifies to) a Boolean is clunky. Instead we can write this like so:
 > $$OR : (Bool, Bool) \rightarrow Bool$$
-> while it may not seem much better at first blush, with time, this format will make talking about code much easier. Another example is `NOT`:
+> While it may not seem much better at first blush, with time, this format will make talking about code much easier. Another example is `NOT`:
 > $$NOT: Bool \rightarrow Bool$$
 
 So for a bit of a recap: 

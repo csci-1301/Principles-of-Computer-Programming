@@ -103,5 +103,6 @@ There is one final operator for division we must cover, commonly called the rema
 
 (NOTE, build a method of doing this with an example using the clock analogy)
 
-## Doubles
+## Floating-Point
 
+0.1 + 0.2 != 0.3
