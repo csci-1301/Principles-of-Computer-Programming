@@ -225,65 +225,130 @@ Now use the truth table for OR you made in the exercise above. (recall: the rule
 $$true$$
 And we're done! Whenever we evaluate expressions, remember that we are done once we have reached a value, which we've defined to be data that we cannot simplify further.
 
-### Path 2: Decomposition!
-
-
-1. **Label the Entire Expression (Outside-In)**
-
-   *   Write the expression as `E`, and identify its major components at the top level. For instance:
-      *   If you have `(A OR B)`, label it that way.
-      *   If it’s `(A AND B) OR C`, call the whole thing `E` and the sub-parts `A`, `B`, `C`.
-
-2. **Decompose Each Major Part**
-
-   *   For each labeled part (e.g., `A`), if it contains multiple operators or parentheses, label those internal pieces as `A_1`, `A_2`, etc.
-   *   Continue until every portion of the expression is a “small enough” subexpression (like `NOT true`, `P AND Q` if `P` and `Q` are known, etc.).
-
-3. **Evaluate from the Innermost Subexpressions**
-
-   *   Identify subexpressions that can be directly solved by a simple logical rule or a small truth table (e.g., `NOT true` → `false`).
-   *   Solve them one by one, assigning each result as `true` or `false`.
-
-4. **Substitute and Bubble Up**
-
-   *   Once a subexpression is evaluated, substitute its truth value back into the label(s) that depend on it. This may allow you to simplify a larger subexpression next.
-   *   Keep moving outward until each higher-level component is also simplified, and ultimately you reach `E`.
-
-5. **Arrive at the Final Result**
-
-   *   After every sub-part is evaluated and substituted, `E` becomes a single truth value (`true` or `false`).
-
-
-```mermaid
-flowchart TB
-    A([Start]) --> B["Label Expression E\n(Top-Level Parts)"]
-    B --> C["Decompose Into Subparts\n(A, B, etc.)"]
-    C --> D{Is Subpart\nSolvable?}
-
-    D -- No --> E["Break Down Further"]
-    E --> D
-
-    D -- Yes --> F["Evaluate\n(Truth Tables or Rules)"]
-    F --> G["Substitute Upwards\ninto Parent Expression"]
-    G --> H{Is E Fully\nReduced to True/False?}
-
-    H -- No --> C
-    %% H -- No --> B %%
-    %% C --> F %%
-    H -- Yes --> I([Done!])
-
-    style A fill:#f0f0f0,stroke:#333,stroke-width:2px
-    style B fill:#fff0e0,stroke:#333
-    style C fill:#fff0e0,stroke:#333
-    style E fill:#fff0e0,stroke:#333
-    style F fill:#fff0e0,stroke:#333
-    style G fill:#fff0e0,stroke:#333
-    style D fill:#6699cc,stroke:#003366,stroke-width:3px
-    style H fill:#6699cc,stroke:#003366,stroke-width:3px
-    style I fill:#cc6600,stroke:#663300,stroke-width:4px
-```
 ---
-#### Examples
+
+Now that we've effectively given a form of evaluating boolean expressions similar to what you have already done before with math before, let's talk about a slightly different approach: How computers do this!
+### Evaluating Expressions With Inference Rules
+
+Writing a whole truth table each time you want to evaluate a boolean expression can become cumbersome quickly. Ideally with time, we can start to build an intuition for rules that come from them, so instead of computing every possible value, we can quickly simplify terms. This works great for us, however traditional computers don't have much in the way of intuition: so we provide these intuitions manually. In this section we'll discuss the rules we use, and how to solve these expressions in a way that matches the general process our compiler uses.
+
+>[!abstract] Inference Rules 
+>There are two main categories of inference rule: rules which simplify, and rules which bring us closer to simplifying. We indicate when it is the latter by calling it a "step" rule, as in stepping closer to simplifying. The rules for simplifying are simply called by the operations name. Another way you can tell: A rule for simplifying will output a value. A rule for stepping will give you a new simpler expression.
+>
+>>[!Definition] NOT Rules
+>> $\frac{}{\texttt{not true} \longrightarrow \texttt{false}} \quad \text{(NotTrue)}$
+>>$\frac{}{\texttt{not false} \longrightarrow \texttt{true}} \quad \text{(NotFalse)}$
+>
+>>[!Definition] AND Rules
+>>$\frac{}{\texttt{true} \land \texttt{true} \longrightarrow \texttt{true}} \quad \text{(AndTrue)}$
+>>$\frac{}{\texttt{false} \land e \longrightarrow \texttt{false}} \quad \text{(AndFalse)}$
+>>$\frac{}{e \land \texttt{false} \longrightarrow \texttt{false}} \quad \text{(AndFalse)}$
+>
+>>[!Definition] OR Rules
+>>$\frac{}{\texttt{true} \lor e \longrightarrow \texttt{true}} \quad \text{(OrTrue)}$ 
+>>$\frac{}{e \lor \texttt{true} \longrightarrow \texttt{true}} \quad \text{(OrTrue)}$
+>>$\frac{}{\texttt{false} \lor \texttt{false} \longrightarrow \texttt{false}} \quad \text{(OrFalse)}$
+>
+>Note, here $e$ is another expression which has not been simplified yet.
+>
+>>[!Definition] Step Rules
+>>
+>>| Rule Name      | Inference Rule                                             |
+>>|-----------------|-----------------------------------------------------------|
+>>| AndStepLeft    | $\frac{e_1 \longrightarrow e_1'}{e_1 \land e_2 \longrightarrow e_1' \land e_2}$ |
+>>| AndStepRight   | $\frac{v_1 \text{ is a value} \quad e_2 \longrightarrow e_2'}{v_1 \land e_2 \longrightarrow v_1 \land e_2'}$ |
+>>| OrStepLeft     | $\frac{e_1 \longrightarrow e_1'}{e_1 \lor e_2 \longrightarrow e_1' \lor e_2}$ |
+>>| OrStepRight    | $\frac{v_1 \text{ is a value} \quad e_2 \longrightarrow e_2'}{v_1 \lor e_2 \longrightarrow v_1 \lor e_2'}$ |
+>>| NotStep        | $\frac{e \longrightarrow e'}{\texttt{not } e \longrightarrow \texttt{not } e'}$ |
+>
+> To use a step rule is to say: the full expression does not have a rule which simplifies it, however I can choose a step rule which matches to bring it closer.
+
+Now that is a lot of rules! However, before worrying too much: notice that each of these rules correspond to something we've done already. Step rules represent how we use PNAO to find the first expression we can simplify, while the remaining rules each correlate to a row in our truth table. Don't believe me? Well let's take AndFalse for example:
+
+>[!example] ANDFalse and Truth Tables
+>First, let's look at both the table, and the rule:
+>
+>| A     | B     | A AND B |
+>| ----- | ----- | ------- |
+>| false | false | false   |
+>| false | true  | false   |
+>| true  | false | false   |
+>| true  | true  | true    |
+>
+> $\frac{}{\texttt{false} \land e \longrightarrow \texttt{false}} \quad \text{(AndFalse)}$
+>$\frac{}{e \land \texttt{false} \longrightarrow \texttt{false}} \quad \text{(AndFalse)}$
+>
+ Notice how we have two ANDFalse rules. This is intentional. We must cover the case where the left side is false and the right is *any* expression, and the case where the right side is false and the left an expression.
+>
+>- Well, now if we look in our truth table, the first rule is the equivalent of our second row, with the first operand being false, and the other being some expression.
+>- Similarly, our second ANDFalse rule covers the third row.
+>- And in case you were wondering: which covers the first? Well both can. Since an expression can consist of a value, either will take the (false,false) case.
+
+The same is true for each of our simplification rules, which I leave you to check as an exercise.
+
+Let's break down the process we're about to follow to apply these and solve expressions:
+
+1. **Parenthesize (PNAO):** Add parentheses to the expression, following the order of operations (PNAO: Parentheses,Not, And, Or), until the entire expression is clearly grouped into two main subexpressions joined by a single operator.
+    
+2. **Simplify the Outermost Operation:**
+    - **Base Rule?**: Can a base rule (e.g., `AndTrue`, `OrFalse`, `NotTrue`) be applied to simplify the _outermost_operation and its operands to a single value (`true` or `false`)?
+        - Yes: Apply the rule. Go to step 4.
+        - No: Go to step 3.
+
+3. **Apply a Step Rule:**
+    - If the outermost operation is `not`, and its operand can be simplified further, apply the `NotStep` rule.
+    - If the outermost operation is `and` or `or`, and one of its operands is a value while the other can be simplified,apply the appropriate `AndStep` or `OrStep` rule (left or right) to the full expression.
+    - Using the chosen step rule, identify the new subexpression that needs simplification.
+    - Go back to step 1, applying these steps recursively to the new subexpression.
+      
+4. **Substitute and Repeat:** After applying a rule in step 2, substitute the simplified value back into the larger expression. Then, return to step 2 and repeat the process until the entire expression is reduced to a single Boolean value (`true` or `false`
+
+Let's walk through an example or two to be sure we got it.
+
+---
+
+Take the expression $true\ and\ (false\ or\ not\ false)$
+
+First, we can see that it is properly parenthesized -> it is an expression consisting of an operator with an appropriate number of input expressions.
+
+Second, we look through our AND rules to see which fit this shape: AndStepRight.
+Which is $\frac{v_1 \text{ is a value} \quad e_2 \longrightarrow e_2'}{v_1 \land e_2 \longrightarrow v_1 \land e_2'}$
+This means we can break this down into 
+$true$ and (the result of solving the subexpression)
+
+Where our subexpression is 
+$false\ or\ not\ false$.
+
+Now we go to step 1 to see if we can parenthesize this, which we can:
+$false\ or\ (not\ false)$
+
+We need to check our step rules again, and we see that we are looking at: OrStepRight
+$\frac{v_1 \text{ is a value} \quad e_2 \longrightarrow e_2'}{v_1 \lor e_2 \longrightarrow v_1 \lor e_2'}$
+
+Here what we simplify this to is 
+$false\ or$ (whatever this expression simplifies too)
+
+We can now take this expression, notice it does not need parenthesizing:
+$not false$
+Further, it is an operator with all its operands! This means we can finally simplify a value!
+We can use the aptly named NotFalse rule as described:
+$\frac{}{\texttt{not false} \longrightarrow \texttt{true}} \quad \text{(NotFalse)}$
+This gives us $true$!
+
+Now we simply go back up, simplifying along the way:
+$false\ or\ true$
+this again is an expression which can be solved with one of our rules: OrTrue!
+$\frac{}{e \lor \texttt{true} \longrightarrow \texttt{true}} \quad \text{(OrTrue)}$
+Which gives us:
+$true$!
+
+Now we can go a step further up, giving us
+$true\ and\ true$
+Which for the astute, sure looks like an AndTrue to me. Using this rule, we get $true$ for our final answer.
+
+---
+
+This process may feel harder to follow, in class and lab we will go over examples which show you a more intuitive way to follow this process. In the mean time: notice how with this current form, we always check to see if we can simplify it before we step! We don't always do this with PNAO. As you will see in our next example, this can save us some valuable time.
 
 >[!Notation] NOTATION 🚧
 >AND has several notations you will see throughout your degree. AND is what we've used so far, but here is a short list of what you may encounter:
@@ -299,96 +364,6 @@ flowchart TB
 >- `!` as in  `! true`
 >- $\lnot$ as in $\lnot true$
 
-Below is a sample run-through of the expression using a step-by-step labeling and simplification process. for the expression $$E = false\ AND\ NOT\ (true\ OR\ false) = false \land \lnot(true \lor false)$$
-
-1. **Label the Entire Expression (Outside-In)**
-
-Let’s label the whole expression as $E$. It has an AND at the top level, so we can decompose it as:
-
-$E = E_1 \land E_2$
-
-where:
-
-*   $E_1 =$ False
-*   $E_2 = \neg (A \lor B)$
-
-At this point, $E_1$ is already as simple as it gets (it is just the constant False). However, $E_2$ has its own subexpression, so we’ll decompose that further.
-
-2. **Decompose Each Major Part**
-
-Within $E_2$, we have a NOT applied to $(A \lor B)$. Let’s label the part inside the NOT:
-
-*   $E_3 = A \lor B$
-
-Hence,
-
-$E_2 = \neg E_3$
-
-So, summarizing:
-
-$E = E_1 \land E_2 = E_1 \land \neg E_3$
-
-3. **Evaluate from the Innermost Subexpressions**
-
-3.1 Evaluate $E_3$
-
-Check the OR truth table:
-
-| A     | B     | A OR B |
-| :---- | :---- | :----- |
-| false | false | false  |
-| false | true  | true   |
-| true  | false | true   |
-| true  | true  | true   |
-
-In $E_3$, both operands are True. Looking at the row where A and B are true, the result is true. So:
-
-$E_3 =$ True
-
-3.2 Evaluate $E_2$
-
-We just found $E_3$. Now we apply the NOT to true:
-
-| A     | NOT A |
-| :---- | :---- |
-| false | true  |
-| true  | false |
-
-Since $E_3$ is true, $E_2 =$ False. Thus,
-
-$E_2 = \neg E_3 =$ False
-
-4. **Substitute and Bubble Up**
-
-Now we go back to the outermost expression $E$.
-
-*   We already have $E_1 =$ False.
-*   We just evaluated $E_2 =$ False.
-
-So,
-
-$E = E_1 \land E_2 =$ False $\land$ False
-
-5. **Arrive at the Final Result**
-
-Finally, we use the AND truth table:
-
-| A     | B     | A AND B |
-| :---- | :---- | :------ |
-| false | false | false   |
-| false | true  | false   |
-| true  | false | false   |
-| true  | true  | true    |
-
-Here, $E_1 =$ False and $E_2 =$ False. From the table, $E =$ False. Hence:
-
-$E =$ False
-
-We have reached a single truth value—no further simplification is possible.
-
-Final Answer:
-
-$E =$ False.
 
 ---
 ## Harder Examples
@@ -549,222 +524,20 @@ Code snippet
 true AND (false OR (true AND NOT true)) OR true = true
 ```
 
-### Break and Bubble!
+### Inference Rules!
 
-Below is a step-by-step run-through of
+Again, we start with $$true\ AND\ (false\ OR\ (true\ AND\ NOT\ true)) OR\ true$$
+Remember that our first step is going to be: parenthesize!
+This yields $$(true\ AND\ (false\ OR\ (true\ AND\ NOT\ true)) )OR\ true$$
+We can scan our rules and see we have one just for this: ORTrue!
 
-$$
-\text{true} \land (\text{false} \lor (\text{true} \land \neg \text{true})) \lor \text{true}
-$$
+Remember: $\frac{}{e \lor \texttt{true} \longrightarrow \texttt{true}} \quad \text{(OrTrue)}$
 
-using a similar labeling and simplification approach. We’ll label from the outside in, then evaluate from the inside out.
-
----
-
-**1. Label the Entire Expression (Outside-In)**
-
-Notice we have the structure:
-
-$$
-(\text{true} \land \text{something}) \lor \text{true}
-$$
-
-We can call the whole expression $E$, and break out its top-level pieces:
-
-$$
-E = X \lor C
-$$
-
-where:
-
-*   $X = A \land B$
-*   $C = \text{true}$
-
-So our first level labeling:
-
-1.  $E$ (the entire expression)
-2.  $X$ — the left side of the top-level $\lor$
-3.  $C$ — the right side of the top-level $\lor$
-
-Let’s expand $X$. We have:
-
-$$
-X = A \land B
-$$
-
-where:
-
-*   $A = \text{true}$
-*   $B = \text{false} \lor (\text{true} \land \neg \text{true})$
-
-We see $B$ itself has an $\lor$ inside, so let’s label that piece as well.
-
----
-
-**2. Decompose Each Major Part**
-
-Inside $B$, we have:
-
-$$
-B = D \lor E
-$$
-
-where:
-
-*   $D = \text{false}$
-*   $E = \text{true} \land \neg \text{true}$
-
-Finally, in $E$, there’s a $\neg$:
-
-$$
-E = P \land Q
-$$
-
-where:
-
-*   $P = \text{true}$
-*   $Q = \neg \text{true}$
-
-So our full labeling structure is:
-
-1.  $E = X \lor C$
-2.  $X = A \land B$
-3.  $A = \text{true}$
-4.  $B = D \lor E$
-5.  $D = \text{false}$
-6.  $E = P \land Q$
-
-    *   $P = \text{true}$
-    *   $Q = \neg \text{true}$
-7.  $C = \text{true}$
-
----
-
-**3. Evaluate from the Innermost Subexpressions**
-
-**3.1 Evaluate $Q = \neg \text{true}$**
-
-Using the $\neg$ truth table:
-
-| A     | $\neg$ A |
-| :---- | :-------- |
-| false | true      |
-| true  | false     |
-
-Because $A = \text{true}$ here, $\neg \text{true} = \text{false}$. So
-
-$$
-Q = \text{false}
-$$
-
----
-
-**3.2 Evaluate $E = P \land Q$**
-
-Now we know:
-
-*   $P = \text{true}$
-*   $Q = \text{false}$
-
-The $\land$ truth table:
-
-| A     | B     | A $\land$ B |
-| :---- | :---- | :----------- |
-| false | false | false        |
-| false | true  | false        |
-| true  | false | false        |
-| true  | true  | true         |
-
-For $P = \text{true}$ and $Q = \text{false}$, we find “true $\land$ false” is `false`. So:
-
-$$
-E = \text{false}
-$$
-
----
-
-**3.3 Evaluate $B = D \lor E$**
-
-We have:
-
-*   $D = \text{false}$
-*   $E = \text{false}$
-
-Using the $\lor$ truth table:
-
-| A     | B     | A $\lor$ B |
-| :---- | :---- | :----------- |
-| false | false | false        |
-| false | true  | true         |
-| true  | false | true         |
-| true  | true  | true         |
-
-“false $\lor$ false” is `false`. So:
-
-$$
-B = \text{false}
-$$
-
----
-
-**3.4 Evaluate $X = A \land B$**
-
-Now:
-
-*   $A = \text{true}$
-*   $B = \text{false}$
-
-From the $\land$ table above, “true $\land$ false” is `false`. Hence:
-
-$$
-X = \text{false}
-$$
-
----
-
-**4. Substitute and Bubble Up**
-
-We’re now back to the topmost expression:
-
-$$
-E = X \lor C
-$$
-
-*   $X = \text{false}$
-*   $C = \text{true}$
-
-So:
-
-$$
-E = \text{false} \lor \text{true}
-$$
-
----
-
-**5. Arrive at the Final Result**
-
-Using the $\lor$ table:
-
-*   “false $\lor$ true” is `true`.
-
-Hence,
-
-$$
-E = \text{true}
-$$
-
----
-
-**Final Answer**
-
-$$
-\text{true} \land (\text{false} \lor (\text{true} \land \neg \text{true})) \lor \text{true} \quad=\quad \text{true}
-$$
+Applying this rule yields: $true$. 
 
 ## Conclusion
 
-Notice that both methods, with appropriately difficult expressions, can be difficult. The former follows a process that we often use when solving algebra problems. The latter however is precisely what a computer does; this follows the exact order of steps the computer will take when evaluating an expression like this, even down to substituting and solving for smaller expressions until it reaches a value. Later in your degree you may learn about call stacks, which handle this process.
-
+Notice that, while both methods can be difficult and require many steps, learning the rules will sometimes present us with shortcuts such as this one, formally described below.
 
 > [!seealso] SHORTCUT
 > Notice how in the beginning, our terms, A `or` B was really A `or true`. If we look at the `OR` truth table we see that any time that `true` is present as an input to `OR`, it simplifies to `true`. By practicing and becoming familiar with how these operators work, you too can find shortcuts to solving these problems.
@@ -772,6 +545,6 @@ Notice that both methods, with appropriately difficult expressions, can be diffi
 > This is commonly referred to as *short-circuit evaluation*, which C# will do with Boolean expressions when it can.
 > 
 
-Now that our primer on boolean expressions has been wrapped up, be sure to do the practice problems *by hand*. Learning happens with practice, which unfortunately can't be short-circuit evaluated.
+Now that our primer on boolean expressions is wrapped up, be sure to do the practice problems *by hand*. Learning happens with practice, which unfortunately can't be short-circuit evaluated.
 
 In our next section we'll talk about a more familiar type system: NUMBERS
