@@ -18,7 +18,4 @@ tags: ["extracted", "definition"]
 
 ## Question:
 
-Define the term: State.
-Explain it with an example in 1–2 sentences.
-
-(*Hint:* This concept was introduced in the textbook. If needed, reference your text for details.) 
+Define State and provide an example. 
