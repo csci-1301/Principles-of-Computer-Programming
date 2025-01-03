@@ -8,15 +8,13 @@ import * as Plugin from "./quartz/plugins"
  */
 const config: QuartzConfig = {
   configuration: {
-    pageTitle: "🪴 Quartz 4.0",
-    pageTitleSuffix: "",
+    pageTitle: "Fundamentals of Computer Science",
+    pageTitleSuffix: "FunCS",
     enableSPA: true,
     enablePopovers: true,
-    analytics: {
-      provider: "plausible",
-    },
+    analytics: null,
     locale: "en-US",
-    baseUrl: "quartz.jzhao.xyz",
+    baseUrl: "funcs.github.io",
     ignorePatterns: ["private", "templates", ".obsidian"],
     defaultDateType: "created",
     generateSocialImages: false,
@@ -24,9 +22,14 @@ const config: QuartzConfig = {
       fontOrigin: "googleFonts",
       cdnCaching: true,
       typography: {
-        header: "Schibsted Grotesk",
-        body: "Source Sans Pro",
-        code: "IBM Plex Mono",
+        // header: "Inter",
+        // header: "Playfair Display",
+        // header: "Source Serif 4",
+        header: "Abril Fatface",
+        // body: "Lora",
+        // body: "Source Sans 3",
+        body: "Karla",
+        code: "Source Code Pro",
       },
       colors: {
         lightMode: {
